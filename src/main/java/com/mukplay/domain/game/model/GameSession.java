@@ -58,6 +58,22 @@ public class GameSession {
         return this.players.get(userId);
     }
 
+    public synchronized long getAlivePlayerCount() {
+        return this.players.values().stream()
+                .filter(PlayerState::isAlive)
+                .count();
+    }
+
+    public synchronized List<PlayerState> getSurvivors() {
+        return this.players.values().stream()
+                .filter(PlayerState::isAlive)
+                .toList();
+    }
+
+    public synchronized boolean shouldFinish() {
+        return getAlivePlayerCount() <= 1 || this.currentRound >= this.maxRounds;
+    }
+
     public synchronized void nextRound() {
         if (this.currentRound >= this.maxRounds) {
             transitionTo(GameSessionState.FINISHED);
