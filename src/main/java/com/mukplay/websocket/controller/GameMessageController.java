@@ -28,6 +28,7 @@ public class GameMessageController {
 
     private final GameSessionRepository gameSessionRepository;
     private final MovementService movementService;
+    private final com.mukplay.domain.game.service.MovementRateLimiter rateLimiter;
 
     @MessageMapping("/game/move")
     public void handleMove(
@@ -37,6 +38,11 @@ public class GameMessageController {
         Long userId = extractUserId(headerAccessor);
         if (userId == null) {
             log.warn("Unauthorized move attempt: No userId in session attributes");
+            return;
+        }
+
+        if (rateLimiter != null && !rateLimiter.isAllowed(userId)) {
+            log.warn("Move rate limit exceeded for user: {}", userId);
             return;
         }
 
