@@ -1,8 +1,9 @@
 package com.mukplay.domain.game.service;
 
-import com.mukplay.domain.game.command.MoveCommand;
 import com.mukplay.domain.game.model.Direction;
+import com.mukplay.domain.game.model.GameSession;
 import com.mukplay.domain.game.model.PlayerState;
+import com.mukplay.domain.game.validator.MovementValidator;
 
 public class MovementService {
 
@@ -17,9 +18,14 @@ public class MovementService {
             throw new IllegalStateException("탈락한 플레이어는 이동할 수 없습니다.");
         }
 
-        double nextX = player.getX() + (direction.getDx() * stepSize);
-        double nextY = player.getY() + (direction.getDy() * stepSize);
+        double nextX = MovementValidator.clampX(player.getX() + (direction.getDx() * stepSize));
+        double nextY = MovementValidator.clampY(player.getY() + (direction.getDy() * stepSize));
 
         player.moveTo(nextX, nextY);
+    }
+
+    public static void applySessionMovement(GameSession session, PlayerState player, Direction direction) {
+        MovementValidator.validateMove(session, player, direction);
+        applyMovement(player, direction, DEFAULT_STEP_SIZE);
     }
 }
