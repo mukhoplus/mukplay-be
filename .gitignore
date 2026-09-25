@@ -12,7 +12,10 @@ build/
 .project
 .settings
 .springBeans
-.sts4-check
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
 
 ### IntelliJ IDEA ###
 .idea
@@ -25,7 +28,6 @@ out/
 
 ### NetBeans ###
 /nbproject/private/
-/build/
 /nbbuild/
 /dist/
 /nbdist/
@@ -33,6 +35,3 @@ out/
 
 ### VS Code ###
 .vscode/
-
-### Mac ###
-.DS_Store
