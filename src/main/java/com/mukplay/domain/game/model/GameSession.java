@@ -10,7 +10,7 @@ public class GameSession {
 
     private final String roomId;
     private GameSessionState state;
-    private final Map<Long, Object> players;
+    private final Map<Long, PlayerState> players;
     private int currentRound;
     private final int maxRounds;
     private final Instant startedAt;
@@ -45,6 +45,17 @@ public class GameSession {
             case ROUND_END -> to == GameSessionState.PLAYING || to == GameSessionState.FINISHED;
             case FINISHED -> false;
         };
+    }
+
+    public synchronized void addPlayer(PlayerState player) {
+        if (player == null) {
+            throw new IllegalArgumentException("player는 필수입니다.");
+        }
+        this.players.put(player.getUserId(), player);
+    }
+
+    public synchronized PlayerState getPlayer(Long userId) {
+        return this.players.get(userId);
     }
 
     public synchronized void nextRound() {
