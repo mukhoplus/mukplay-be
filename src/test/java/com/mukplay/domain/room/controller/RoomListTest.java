@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
+import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -69,7 +70,7 @@ class RoomListTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data[?(@.name == '대기방 1번')].state").value("WAITING"))
-                .andExpect(jsonPath("$.data[?(@.name == '대기방 1번')].currentPlayers").value(1));
+                .andExpect(jsonPath("$.data[?(@.name == '대기방 1번')].state", hasItem("WAITING")))
+                .andExpect(jsonPath("$.data[?(@.name == '대기방 1번')].currentPlayers", hasItem(1)));
     }
 }

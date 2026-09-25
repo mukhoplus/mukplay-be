@@ -5,6 +5,9 @@ import com.mukplay.domain.game.model.GameSession;
 import com.mukplay.domain.game.model.PlayerState;
 import com.mukplay.domain.game.validator.MovementValidator;
 
+import org.springframework.stereotype.Service;
+
+@Service
 public class MovementService {
 
     public static final double DEFAULT_STEP_SIZE = 2.0;
