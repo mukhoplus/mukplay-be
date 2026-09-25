@@ -28,4 +28,19 @@ public class QuestionService {
         Question saved = questionRepository.save(question);
         return QuestionResponse.from(saved);
     }
+
+    @Transactional
+    public QuestionResponse updateQuestionStatus(Long questionId, QuestionStatus newStatus) {
+        Question question = questionRepository.findById(questionId)
+                .orElseThrow(() -> new com.mukplay.common.exception.BusinessException(
+                        com.mukplay.common.exception.ErrorCode.ENTITY_NOT_FOUND, "문제를 찾을 수 없습니다. id=" + questionId));
+
+        if (newStatus == QuestionStatus.APPROVED) {
+            question.approve();
+        } else if (newStatus == QuestionStatus.REJECTED) {
+            question.reject();
+        }
+
+        return QuestionResponse.from(question);
+    }
 }
