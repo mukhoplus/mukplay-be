@@ -30,7 +30,7 @@ class MoveCommandHandlerTest {
     void setUp() {
         repository = new GameSessionRepository();
         movementService = new MovementService();
-        controller = new GameMessageController(repository, movementService);
+        controller = new GameMessageController(repository, movementService, null);
     }
 
     @Test
