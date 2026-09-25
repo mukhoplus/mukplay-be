@@ -38,6 +38,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/**",
+                                "/api/rankings/**",
                                 "/ws/**",
                                 "/h2-console/**",
                                 "/error"
