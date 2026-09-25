@@ -16,3 +16,7 @@ spring:
     redis:
       host: localhost
       port: 6379
+
+jwt:
+  secret: mukplay-super-secure-jwt-secret-key-for-ox-quiz-game-2026-very-long-key
+  expiration-ms: 3600000
