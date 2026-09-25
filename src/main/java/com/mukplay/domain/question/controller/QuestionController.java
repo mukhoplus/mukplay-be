@@ -27,4 +27,14 @@ public class QuestionController {
         QuestionResponse response = questionService.submitQuestion(submitterId, request);
         return ApiResponse.success(response);
     }
+
+    @PatchMapping("/{id}/status")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<QuestionResponse> updateStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody com.mukplay.domain.question.dto.QuestionStatusUpdateRequest request) {
+
+        QuestionResponse response = questionService.updateQuestionStatus(id, request.status());
+        return ApiResponse.success(response);
+    }
 }
