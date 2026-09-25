@@ -24,6 +24,12 @@ public class MovementService {
         player.moveTo(nextX, nextY);
     }
 
+    public static final double STEP_SIZE = DEFAULT_STEP_SIZE;
+
+    public void move(GameSession session, PlayerState player, Direction direction) {
+        applySessionMovement(session, player, direction);
+    }
+
     public static void applySessionMovement(GameSession session, PlayerState player, Direction direction) {
         MovementValidator.validateMove(session, player, direction);
         applyMovement(player, direction, DEFAULT_STEP_SIZE);
