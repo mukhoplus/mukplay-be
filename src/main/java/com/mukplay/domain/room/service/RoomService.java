@@ -2,6 +2,12 @@ package com.mukplay.domain.room.service;
 
 import com.mukplay.common.exception.BusinessException;
 import com.mukplay.common.exception.ErrorCode;
+import com.mukplay.domain.game.model.*;
+import com.mukplay.domain.game.repository.GameSessionRepository;
+import com.mukplay.domain.question.entity.Question;
+import com.mukplay.domain.question.entity.QuestionDifficulty;
+import com.mukplay.domain.question.entity.QuestionStatus;
+import com.mukplay.domain.question.repository.QuestionRepository;
 import com.mukplay.domain.room.dto.CreateRoomRequest;
 import com.mukplay.domain.room.dto.RoomResponse;
 import com.mukplay.domain.room.model.Room;
@@ -9,16 +15,20 @@ import com.mukplay.domain.room.model.RoomParticipant;
 import com.mukplay.domain.room.repository.RoomRedisRepository;
 import com.mukplay.domain.user.entity.User;
 import com.mukplay.domain.user.repository.UserRepository;
-import com.mukplay.domain.game.model.GameSession;
-import com.mukplay.domain.game.model.GameSessionState;
-import com.mukplay.domain.game.model.PlayerState;
-import com.mukplay.domain.game.repository.GameSessionRepository;
+import com.mukplay.websocket.service.GamePositionBroadcastService;
+import com.mukplay.websocket.service.GameStateBroadcastService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RoomService {
@@ -26,6 +36,10 @@ public class RoomService {
     private final RoomRedisRepository roomRedisRepository;
     private final UserRepository userRepository;
     private final GameSessionRepository gameSessionRepository;
+    private final QuestionRepository questionRepository;
+    private final SimpMessagingTemplate messagingTemplate;
+    private final GameStateBroadcastService gameStateBroadcastService;
+    private final GamePositionBroadcastService gamePositionBroadcastService;
 
     public RoomResponse createRoom(Long userId, CreateRoomRequest request) {
         User user = userRepository.findById(userId)
@@ -104,7 +118,7 @@ public class RoomService {
         roomRedisRepository.save(room);
 
         // Active GameSession 생성 및 등록
-        GameSession session = new GameSession(room.getRoomId(), 10);
+        GameSession session = new GameSession(room.getRoomId(), 5);
         int index = 0;
         int total = room.getParticipants().size();
         for (RoomParticipant p : room.getParticipants()) {
@@ -118,6 +132,49 @@ public class RoomService {
         session.nextRound();
         gameSessionRepository.save(session);
 
+        // 1라운드 문제 할당
+        Question question = getOrCreateDefaultQuestion();
+        Round firstRound = new Round(
+                1,
+                question.getId(),
+                question.getAnswer(),
+                Instant.now(),
+                Duration.ofSeconds(15)
+        );
+
+        // 1. 대기실에 참가 중인 모든 클라이언트에게 게임 시작 브로드캐스트 (실시간 이동 트리거)
+        Map<String, Object> startSignal = Map.of(
+                "roomId", roomId,
+                "state", "PLAYING"
+        );
+        messagingTemplate.convertAndSend("/topic/room/" + roomId + "/start", (Object) startSignal);
+
+        // 2. 게임 상태 및 문제 브로드캐스트
+        gameStateBroadcastService.broadcastState(session, firstRound, question.getContent());
+
+        // 3. 플레이어 위치 초기화 브로드캐스트
+        gamePositionBroadcastService.broadcastPositions(session);
+
+        log.info("Game started successfully: roomId={}, playerCount={}, question={}",
+                roomId, total, question.getContent());
+
         return RoomResponse.from(room);
+    }
+
+    private Question getOrCreateDefaultQuestion() {
+        List<Question> approved = questionRepository.findByStatus(QuestionStatus.APPROVED);
+        if (!approved.isEmpty()) {
+            return approved.get((int) (Math.random() * approved.size()));
+        }
+
+        // DB에 문제가 하나도 없을 때 기본 퀴즈 1개 자동 등록
+        Question defaultQ = Question.builder()
+                .content("토마토는 과일이 아니라 채소다.")
+                .answer(Answer.O)
+                .difficulty(QuestionDifficulty.EASY)
+                .status(QuestionStatus.APPROVED)
+                .submitterId(1L)
+                .build();
+        return questionRepository.save(defaultQ);
     }
 }
