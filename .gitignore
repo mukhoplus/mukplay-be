@@ -46,3 +46,6 @@ src/main/resources/application-*-secret.yml
 src/main/resources/application-local-custom.yml
 *.secret
 src/main/resources/application-local.yml
+src/main/resources/application-prod.yml
+!src/main/resources/application-*.example
+!src/main/resources/application-*.example.*
