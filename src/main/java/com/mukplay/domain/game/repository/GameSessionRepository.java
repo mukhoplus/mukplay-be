@@ -38,4 +38,8 @@ public class GameSessionRepository {
     public boolean exists(String roomId) {
         return roomId != null && sessions.containsKey(roomId);
     }
+
+    public java.util.Collection<GameSession> findAll() {
+        return sessions.values();
+    }
 }

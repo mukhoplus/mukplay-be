@@ -195,6 +195,19 @@ public class RoomService {
         );
     }
 
+    public Round getActiveRound(String roomId) {
+        return activeRounds.get(roomId);
+    }
+
+    public void updateActiveRound(String roomId, Round round, String questionContent) {
+        activeRounds.put(roomId, round);
+        activeQuestionContents.put(roomId, questionContent);
+    }
+
+    public Question getRandomQuestion() {
+        return getOrCreateDefaultQuestion();
+    }
+
     private Question getOrCreateDefaultQuestion() {
         List<Question> approved = questionRepository.findByStatus(QuestionStatus.APPROVED);
         if (!approved.isEmpty()) {
