@@ -49,6 +49,13 @@ public class RoomController {
         return ResponseEntity.ok(ApiResponse.success("방에 입장했습니다.", response));
     }
 
+    @PostMapping("/{roomId}/bot")
+    public ResponseEntity<ApiResponse<RoomResponse>> addBot(
+            @PathVariable String roomId) {
+        RoomResponse response = roomService.addBot(roomId);
+        return ResponseEntity.ok(ApiResponse.success("테스트봇이 입장했습니다.", response));
+    }
+
     @PostMapping("/{roomId}/leave")
     public ResponseEntity<ApiResponse<RoomResponse>> leaveRoom(
             @AuthenticationPrincipal UserPrincipal principal,

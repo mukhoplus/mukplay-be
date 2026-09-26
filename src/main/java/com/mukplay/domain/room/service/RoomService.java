@@ -9,6 +9,10 @@ import com.mukplay.domain.room.model.RoomParticipant;
 import com.mukplay.domain.room.repository.RoomRedisRepository;
 import com.mukplay.domain.user.entity.User;
 import com.mukplay.domain.user.repository.UserRepository;
+import com.mukplay.domain.game.model.GameSession;
+import com.mukplay.domain.game.model.GameSessionState;
+import com.mukplay.domain.game.model.PlayerState;
+import com.mukplay.domain.game.repository.GameSessionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +25,7 @@ public class RoomService {
 
     private final RoomRedisRepository roomRedisRepository;
     private final UserRepository userRepository;
+    private final GameSessionRepository gameSessionRepository;
 
     public RoomResponse createRoom(Long userId, CreateRoomRequest request) {
         User user = userRepository.findById(userId)
@@ -65,6 +70,18 @@ public class RoomService {
         return RoomResponse.from(room);
     }
 
+    public RoomResponse addBot(String roomId) {
+        Room room = roomRedisRepository.findById(roomId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_FOUND));
+
+        long botId = 99000L + (room.getParticipants().size() * 10L) + (System.currentTimeMillis() % 100);
+        String botNickname = "테스트봇" + room.getParticipants().size();
+        room.addParticipant(new RoomParticipant(botId, botNickname));
+        roomRedisRepository.save(room);
+
+        return RoomResponse.from(room);
+    }
+
     public RoomResponse leaveRoom(Long userId, String roomId) {
         Room room = roomRedisRepository.findById(roomId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_FOUND));
@@ -85,6 +102,21 @@ public class RoomService {
 
         room.start(userId);
         roomRedisRepository.save(room);
+
+        // Active GameSession 생성 및 등록
+        GameSession session = new GameSession(room.getRoomId(), 10);
+        int index = 0;
+        int total = room.getParticipants().size();
+        for (RoomParticipant p : room.getParticipants()) {
+            double initialX = 50.0 + ((index - (total / 2.0)) * 6.0);
+            double initialY = 50.0;
+            session.addPlayer(new PlayerState(p.getUserId(), initialX, initialY));
+            index++;
+        }
+        session.transitionTo(GameSessionState.STARTING);
+        session.transitionTo(GameSessionState.PLAYING);
+        session.nextRound();
+        gameSessionRepository.save(session);
 
         return RoomResponse.from(room);
     }
