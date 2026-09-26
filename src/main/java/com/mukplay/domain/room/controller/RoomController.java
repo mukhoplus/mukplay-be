@@ -20,6 +20,7 @@ import java.util.List;
 public class RoomController {
 
     private final RoomService roomService;
+    private final com.mukplay.domain.game.service.GameResultQueryService gameResultQueryService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<RoomResponse>> createRoom(
@@ -45,6 +46,15 @@ public class RoomController {
     public ResponseEntity<ApiResponse<com.mukplay.domain.room.dto.CurrentGameResponse>> getCurrentGame(@PathVariable String roomId) {
         com.mukplay.domain.room.dto.CurrentGameResponse game = roomService.getCurrentGame(roomId);
         return ResponseEntity.ok(ApiResponse.success(game));
+    }
+
+    @GetMapping("/{roomId}/result")
+    public ResponseEntity<ApiResponse<com.mukplay.domain.game.dto.GameResultResponse>> getGameResult(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable String roomId) {
+        Long userId = principal != null ? principal.getId() : null;
+        com.mukplay.domain.game.dto.GameResultResponse result = gameResultQueryService.getGameResult(roomId, userId);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @PostMapping("/{roomId}/join")

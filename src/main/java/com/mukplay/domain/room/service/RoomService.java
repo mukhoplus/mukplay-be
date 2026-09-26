@@ -130,7 +130,7 @@ public class RoomService {
         for (RoomParticipant p : room.getParticipants()) {
             double initialX = 50.0 + ((index - (total / 2.0)) * 6.0);
             double initialY = 50.0;
-            session.addPlayer(new PlayerState(p.getUserId(), initialX, initialY));
+            session.addPlayer(new PlayerState(p.getUserId(), p.getNickname(), initialX, initialY));
             index++;
         }
         session.transitionTo(GameSessionState.STARTING);
