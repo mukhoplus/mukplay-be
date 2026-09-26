@@ -9,12 +9,14 @@ import com.mukplay.domain.question.entity.QuestionDifficulty;
 import com.mukplay.domain.question.entity.QuestionStatus;
 import com.mukplay.domain.question.repository.QuestionRepository;
 import com.mukplay.domain.room.dto.CreateRoomRequest;
+import com.mukplay.domain.room.dto.CurrentGameResponse;
 import com.mukplay.domain.room.dto.RoomResponse;
 import com.mukplay.domain.room.model.Room;
 import com.mukplay.domain.room.model.RoomParticipant;
 import com.mukplay.domain.room.repository.RoomRedisRepository;
 import com.mukplay.domain.user.entity.User;
 import com.mukplay.domain.user.repository.UserRepository;
+import com.mukplay.websocket.dto.RoomPositionsBroadcast;
 import com.mukplay.websocket.service.GamePositionBroadcastService;
 import com.mukplay.websocket.service.GameStateBroadcastService;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
@@ -40,6 +43,9 @@ public class RoomService {
     private final SimpMessagingTemplate messagingTemplate;
     private final GameStateBroadcastService gameStateBroadcastService;
     private final GamePositionBroadcastService gamePositionBroadcastService;
+
+    private final Map<String, Round> activeRounds = new ConcurrentHashMap<>();
+    private final Map<String, String> activeQuestionContents = new ConcurrentHashMap<>();
 
     public RoomResponse createRoom(Long userId, CreateRoomRequest request) {
         User user = userRepository.findById(userId)
@@ -142,6 +148,9 @@ public class RoomService {
                 Duration.ofSeconds(15)
         );
 
+        activeRounds.put(roomId, firstRound);
+        activeQuestionContents.put(roomId, question.getContent());
+
         // 1. 대기실에 참가 중인 모든 클라이언트에게 게임 시작 브로드캐스트 (실시간 이동 트리거)
         Map<String, Object> startSignal = Map.of(
                 "roomId", roomId,
@@ -159,6 +168,31 @@ public class RoomService {
                 roomId, total, question.getContent());
 
         return RoomResponse.from(room);
+    }
+
+    public CurrentGameResponse getCurrentGame(String roomId) {
+        GameSession session = gameSessionRepository.findByRoomId(roomId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ENTITY_NOT_FOUND, "현재 진행 중인 게임이 없습니다. roomId=" + roomId));
+
+        Round round = activeRounds.get(roomId);
+        String questionContent = activeQuestionContents.get(roomId);
+
+        List<RoomPositionsBroadcast.PlayerPositionDto> positions = session.getPlayers().values().stream()
+                .map(RoomPositionsBroadcast.PlayerPositionDto::from)
+                .toList();
+
+        return new CurrentGameResponse(
+                session.getRoomId(),
+                session.getState(),
+                session.getCurrentRound(),
+                session.getMaxRounds(),
+                round != null ? round.getQuestionId() : null,
+                questionContent != null ? questionContent : "문제를 불러오는 중입니다...",
+                round != null ? round.getStartedAt() : session.getStartedAt(),
+                round != null ? round.getEndsAt() : null,
+                session.getAlivePlayerCount(),
+                positions
+        );
     }
 
     private Question getOrCreateDefaultQuestion() {

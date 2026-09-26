@@ -41,6 +41,12 @@ public class RoomController {
         return ResponseEntity.ok(ApiResponse.success(room));
     }
 
+    @GetMapping("/{roomId}/game")
+    public ResponseEntity<ApiResponse<com.mukplay.domain.room.dto.CurrentGameResponse>> getCurrentGame(@PathVariable String roomId) {
+        com.mukplay.domain.room.dto.CurrentGameResponse game = roomService.getCurrentGame(roomId);
+        return ResponseEntity.ok(ApiResponse.success(game));
+    }
+
     @PostMapping("/{roomId}/join")
     public ResponseEntity<ApiResponse<RoomResponse>> joinRoom(
             @AuthenticationPrincipal UserPrincipal principal,
