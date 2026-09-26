@@ -1,10 +1,13 @@
 package com.mukplay.domain.game.scheduler;
 
+import com.mukplay.domain.game.dto.PlayerSettlementInfo;
 import com.mukplay.domain.game.model.GameSession;
 import com.mukplay.domain.game.model.GameSessionState;
+import com.mukplay.domain.game.model.PlayerState;
 import com.mukplay.domain.game.model.Round;
 import com.mukplay.domain.game.repository.GameSessionRepository;
 import com.mukplay.domain.game.service.EliminationService;
+import com.mukplay.domain.game.service.GameSettlementService;
 import com.mukplay.domain.question.entity.Question;
 import com.mukplay.domain.room.service.RoomService;
 import com.mukplay.websocket.dto.GameEventType;
@@ -18,6 +21,9 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,6 +41,7 @@ public class GameLoopScheduler {
     private final GameSessionRepository gameSessionRepository;
     private final RoomService roomService;
     private final EliminationService eliminationService;
+    private final GameSettlementService gameSettlementService;
     private final GameStateBroadcastService gameStateBroadcastService;
     private final GamePositionBroadcastService gamePositionBroadcastService;
     private final GameEventBroadcastService gameEventBroadcastService;
@@ -104,6 +111,51 @@ public class GameLoopScheduler {
                 if (session.shouldFinish()) {
                     session.transitionTo(GameSessionState.FINISHED);
                     log.info("Game finished for roomId={}, aliveCount={}", roomId, session.getAlivePlayerCount());
+
+                    // 게임 결과 및 경험치 정산
+                    try {
+                        List<PlayerState> allPlayers = new ArrayList<>(session.getPlayers().values());
+                        allPlayers.sort((a, b) -> {
+                            if (a.isAlive() != b.isAlive()) {
+                                return a.isAlive() ? -1 : 1;
+                            }
+                            if (b.getSurvivedRounds() != a.getSurvivedRounds()) {
+                                return Integer.compare(b.getSurvivedRounds(), a.getSurvivedRounds());
+                            }
+                            return Integer.compare(b.getCorrectCount(), a.getCorrectCount());
+                        });
+
+                        List<PlayerSettlementInfo> settlementInfos = new ArrayList<>();
+                        int currentRank = 1;
+                        for (int i = 0; i < allPlayers.size(); i++) {
+                            PlayerState p = allPlayers.get(i);
+                            boolean isWinner = p.isAlive() && (i == 0 || allPlayers.get(0).isAlive());
+                            int baseExp = p.getSurvivedRounds() * 20;
+
+                            settlementInfos.add(new PlayerSettlementInfo(
+                                    p.getUserId(),
+                                    p.getNickname(),
+                                    currentRank,
+                                    p.getSurvivedRounds(),
+                                    p.getCorrectCount(),
+                                    p.getWrongCount(),
+                                    baseExp,
+                                    isWinner
+                            ));
+                            currentRank++;
+                        }
+
+                        gameSettlementService.settleGame(
+                                roomId,
+                                LocalDateTime.ofInstant(session.getStartedAt(), ZoneId.systemDefault()),
+                                LocalDateTime.now(),
+                                allPlayers.size(),
+                                settlementInfos
+                        );
+                        log.info("Game settlement completed successfully for roomId={}", roomId);
+                    } catch (Exception e) {
+                        log.error("Failed to settle game for roomId={}", roomId, e);
+                    }
 
                     gameEventBroadcastService.broadcastEvent(roomId, GameEventType.GAME_FINISHED, Map.of(
                             "roomId", roomId,

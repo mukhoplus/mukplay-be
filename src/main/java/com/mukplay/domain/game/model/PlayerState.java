@@ -8,17 +8,30 @@ import java.time.Instant;
 public class PlayerState {
 
     private final Long userId;
+    private final String nickname;
     private double x;
     private double y;
     private boolean alive;
+    private int correctCount;
+    private int wrongCount;
+    private int survivedRounds;
+    private Integer eliminatedRound;
     private final Instant joinedAt;
 
-    public PlayerState(Long userId, double initialX, double initialY) {
+    public PlayerState(Long userId, String nickname, double initialX, double initialY) {
         this.userId = userId;
+        this.nickname = nickname != null ? nickname : "플레이어 " + userId;
         this.x = initialX;
         this.y = initialY;
         this.alive = true;
+        this.correctCount = 0;
+        this.wrongCount = 0;
+        this.survivedRounds = 0;
         this.joinedAt = Instant.now();
+    }
+
+    public PlayerState(Long userId, double initialX, double initialY) {
+        this(userId, "플레이어 " + userId, initialX, initialY);
     }
 
     public synchronized void moveTo(double newX, double newY) {
@@ -27,6 +40,17 @@ public class PlayerState {
         }
         this.x = newX;
         this.y = newY;
+    }
+
+    public synchronized void recordCorrect() {
+        this.correctCount++;
+        this.survivedRounds++;
+    }
+
+    public synchronized void recordWrong(int round) {
+        this.wrongCount++;
+        this.eliminatedRound = round;
+        this.alive = false;
     }
 
     public synchronized void eliminate() {

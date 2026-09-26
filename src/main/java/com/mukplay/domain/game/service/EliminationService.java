@@ -29,8 +29,10 @@ public class EliminationService {
         for (PlayerState player : session.getPlayers().values()) {
             if (player.isAlive()) {
                 boolean correct = AnswerZoneDeterminer.isCorrect(player.getX(), round.getAnswer());
-                if (!correct) {
-                    player.eliminate();
+                if (correct) {
+                    player.recordCorrect();
+                } else {
+                    player.recordWrong(session.getCurrentRound());
                     eliminatedUserIds.add(player.getUserId());
                 }
             }

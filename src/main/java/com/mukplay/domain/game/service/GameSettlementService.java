@@ -66,23 +66,25 @@ public class GameSettlementService {
                     participantCount
             );
 
-            // Update User exp and level
-            User user = userRepository.findById(info.userId())
-                    .orElseThrow(() -> new BusinessException(ErrorCode.ENTITY_NOT_FOUND, "사용자를 찾을 수 없습니다. userId=" + info.userId()));
-
-            int oldLevel = user.getLevel();
-            user.addExp(earnedExp);
-            if (user.getLevel() > oldLevel) {
-                log.info("User level up! userId={}, level={} -> {}", user.getId(), oldLevel, user.getLevel());
-            }
+            // Update User exp and level if registered user (skip for bots)
+            userRepository.findById(info.userId()).ifPresent(user -> {
+                int oldLevel = user.getLevel();
+                user.addExp(earnedExp);
+                if (user.getLevel() > oldLevel) {
+                    log.info("User level up! userId={}, level={} -> {}", user.getId(), oldLevel, user.getLevel());
+                }
+            });
 
             // Persist GameResult
             GameResult result = GameResult.builder()
                     .gameLogId(savedLog.getId())
-                    .userId(user.getId())
+                    .userId(info.userId())
+                    .nickname(info.nickname())
                     .rank(info.rank())
                     .earnedExp(earnedExp)
                     .survivedRounds(info.survivedRounds())
+                    .correctCount(info.correctCount())
+                    .wrongCount(info.wrongCount())
                     .build();
 
             results.add(gameResultRepository.save(result));

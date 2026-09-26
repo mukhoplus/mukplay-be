@@ -28,6 +28,9 @@ public class GameResult extends BaseTimeEntity {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
+    @Column(name = "nickname", length = 50)
+    private String nickname;
+
     @Column(name = "game_rank", nullable = false)
     private int rank;
 
@@ -37,8 +40,14 @@ public class GameResult extends BaseTimeEntity {
     @Column(name = "survived_rounds", nullable = false)
     private int survivedRounds;
 
+    @Column(name = "correct_count", nullable = false)
+    private int correctCount;
+
+    @Column(name = "wrong_count", nullable = false)
+    private int wrongCount;
+
     @Builder
-    public GameResult(Long gameLogId, Long userId, int rank, int earnedExp, int survivedRounds) {
+    public GameResult(Long gameLogId, Long userId, String nickname, int rank, int earnedExp, int survivedRounds, int correctCount, int wrongCount) {
         if (gameLogId == null) {
             throw new IllegalArgumentException("gameLogId는 필수입니다.");
         }
@@ -57,8 +66,11 @@ public class GameResult extends BaseTimeEntity {
 
         this.gameLogId = gameLogId;
         this.userId = userId;
+        this.nickname = nickname != null ? nickname : "플레이어 " + userId;
         this.rank = rank;
         this.earnedExp = earnedExp;
         this.survivedRounds = survivedRounds;
+        this.correctCount = correctCount;
+        this.wrongCount = wrongCount;
     }
 }
