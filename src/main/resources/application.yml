@@ -1,29 +1,14 @@
 spring:
   application:
     name: mukplay-be
-
-  datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:mukplay}?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=UTC
-    username: ${MYSQL_USER:root}
-    password: ${MYSQL_PASSWORD:root}
-    driver-class-name: com.mysql.cj.jdbc.Driver
-
-  jpa:
-    hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        format_sql: true
-        show_sql: false
-
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-
-jwt:
-  secret: ${JWT_SECRET:mukplay-super-secure-jwt-secret-key-for-ox-quiz-game-2026-very-long-key}
-  expiration-ms: 3600000 # 1 hour
+  profiles:
+    default: local
+  config:
+    import:
+      - optional:application-secret.yml
 
 server:
   port: 8080
+
+jwt:
+  expiration-ms: 3600000 # 1 hour
