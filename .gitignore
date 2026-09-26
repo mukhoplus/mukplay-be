@@ -40,7 +40,9 @@ out/
 .env
 .env.*
 !.env.example
+src/main/resources/application-*.yml
 src/main/resources/application-secret.yml
 src/main/resources/application-*-secret.yml
 src/main/resources/application-local-custom.yml
 *.secret
+src/main/resources/application-local.yml
