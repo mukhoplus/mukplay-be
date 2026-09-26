@@ -20,15 +20,19 @@ public class GameStateBroadcastService {
     private final SimpMessagingTemplate messagingTemplate;
 
     public void broadcastState(GameSession session, Round currentRound) {
+        broadcastState(session, currentRound, null);
+    }
+
+    public void broadcastState(GameSession session, Round currentRound, String questionContent) {
         if (session == null) {
             throw new IllegalArgumentException("GameSession은 필수입니다.");
         }
 
-        GameStateBroadcast message = GameStateBroadcast.from(session, currentRound);
+        GameStateBroadcast message = GameStateBroadcast.from(session, currentRound, questionContent);
         String destination = StompDestination.getRoomStateDestination(session.getRoomId());
 
         messagingTemplate.convertAndSend(destination, message);
-        log.debug("State broadcasted: destination={}, state={}, round={}",
-                destination, message.state(), message.currentRound());
+        log.debug("State broadcasted: destination={}, state={}, round={}, question={}",
+                destination, message.state(), message.currentRound(), questionContent);
     }
 }

@@ -23,12 +23,31 @@ import java.util.Map;
  */
 @Slf4j
 @Controller
-@RequiredArgsConstructor
 public class GameMessageController {
 
     private final GameSessionRepository gameSessionRepository;
     private final MovementService movementService;
     private final com.mukplay.domain.game.service.MovementRateLimiter rateLimiter;
+    private final com.mukplay.websocket.service.GamePositionBroadcastService gamePositionBroadcastService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public GameMessageController(
+            GameSessionRepository gameSessionRepository,
+            MovementService movementService,
+            com.mukplay.domain.game.service.MovementRateLimiter rateLimiter,
+            com.mukplay.websocket.service.GamePositionBroadcastService gamePositionBroadcastService) {
+        this.gameSessionRepository = gameSessionRepository;
+        this.movementService = movementService;
+        this.rateLimiter = rateLimiter;
+        this.gamePositionBroadcastService = gamePositionBroadcastService;
+    }
+
+    public GameMessageController(
+            GameSessionRepository gameSessionRepository,
+            MovementService movementService,
+            com.mukplay.domain.game.service.MovementRateLimiter rateLimiter) {
+        this(gameSessionRepository, movementService, rateLimiter, null);
+    }
 
     @MessageMapping("/game/move")
     public void handleMove(
@@ -60,7 +79,10 @@ public class GameMessageController {
         }
 
         movementService.move(session, player, command.direction());
-        log.debug("Move applied: roomId={}, userId={}, dir={}, newPos=({}, {})",
+        if (gamePositionBroadcastService != null) {
+            gamePositionBroadcastService.broadcastPositions(session);
+        }
+        log.debug("Move applied and broadcasted: roomId={}, userId={}, dir={}, newPos=({}, {})",
                 command.roomId(), command.userId(), command.direction(), player.getX(), player.getY());
     }
 
